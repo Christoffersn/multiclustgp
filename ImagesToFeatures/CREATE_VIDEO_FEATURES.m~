@@ -1,0 +1,62 @@
+function Image = CREATE_VIDEO_FEATURES(files, startIndex, skip, endIndex, digitCount, filetype, varargin)
+
+useRGB = false;
+useSift = false;
+vectorLength = 0;
+
+nVarargs = length(varargin);
+for i = 1:nVarargs
+    if strcmp(varargin{i}, 'rgb')
+        useRGB = true;
+    end
+    if strcmp(varargin{i}, 'sift')
+        useSift = true;
+    end
+end
+
+featureVector = false;
+featureNames = false;
+RGB = false;
+
+if useRGB
+    display('Generating RGB features.');
+    RGB = GetRGBIfNotYetRetrieved(RGB, files, startIndex, skip, endIndex, digitCount, filetype);
+    if featureVector == false
+        featureNames = {'red';'green';'blue'};
+        featureVector = RGB;
+    else
+        locfeatureNames = GetRGBFeatureNames(RGB);
+        locfeatureVector = RGB;
+        featureVector = cat(3,featureVector, locfeatureVector);
+        featureNames = cat(1,featureNames, locfeatureNames);
+    end    
+end
+if useSift
+    display('Generating SIFT features.');
+    if featureVector == false
+        [featureVector, featureNames] = ImageStackToSIFT_Video(files, startIndex,skip, endIndex, digitCount, filetype, false);
+    else
+        [locfeatureVector, locfeatureNames] = ImageStackToSIFT_Video(files, startIndex,skip, endIndex,digitCount, filetype, false);
+        featureVector = cat(3,featureVector, locfeatureVector);
+        featureNames = cat(1,featureNames, locfeatureNames);
+    end
+end
+
+display('Done creating features.');
+
+Image.Features = featureVector;
+Image.FeatureNames = featureNames;
+
+end
+
+function RGB = GetRGBIfNotYetRetrieved(currentRGB, files, startIndex, skip, endIndex, digitCount, filetype)
+    if currentRGB == false
+        if filetype == 'tif'
+            RGB = TIFImageStackToRGB_Video(files, startIndex, skip, endIndex,digitCount);
+        else
+            RGB = PNGImageStackToRGB_Video(files, startIndex, skip, endIndex,digitCount);
+        end
+    else
+       RGB = currentRGB; 
+    end
+end
